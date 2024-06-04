@@ -87,5 +87,5 @@ def dual_gradient(X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
             print(
                 f"Iteration {i + 1}: Objective = {current_obj}, L = {L}, Backtracks = {backtrack_count}"
             )
-
-    return v, objective_values, np.array(beta_values)
+    # beta_values = historical parameter values
+    return v, objective_values, np.array(beta_values[-1])
