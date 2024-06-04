@@ -46,19 +46,19 @@ mse_lars = mean_squared_error(y_test, lasso_lars.predict(X_test))
 beta_primal, loss_history_primal = primal_gradient(X_train, y_train, lambda_)
 
 # Dual Gradient
-# v0 = np.zeros(X_train.shape[1])
-# L0 = 10.0
-# gamma_d = 2
-# max_iter = 100
-# vk, objective_values, beta_dual = dual_gradient(
-#     X_train,
-#     y_train,
-#     lambda_,
-#     v0,
-#     L0,
-#     gamma_d,
-#     max_iter,
-# )
+v0 = np.zeros(X_train.shape[1])
+L0 = 10.0
+gamma_d = 2
+max_iter = 100
+vk, objective_values, beta_dual = dual_gradient(
+    X_train,
+    y_train,
+    lambda_,
+    v0,
+    L0,
+    gamma_d,
+    max_iter,
+)
 
 
 # Plot
@@ -76,7 +76,7 @@ cmap = cm.get_cmap("inferno")
 color_nesterov = cmap(0.2)
 color_lasso = cmap(0.35)
 color_primal = cmap(0.5)
-# color_dual = cmap(0.65)
+color_dual = cmap(0.65)
 color_lars = cmap(0.8)
 
 
@@ -95,13 +95,13 @@ ax.bar(
     color=color_primal,
 )
 # add the dual gradient coefficients
-# ax.bar(
-#     indices + 3 * width,
-#     beta_dual,
-#     width=width,
-#     label="Dual Gradient",
-#     color=color_dual,
-# )
+ax.bar(
+    indices + 3 * width,
+    beta_dual,
+    width=width,
+    label="Dual Gradient",
+    color=color_dual,
+)
 
 
 ax.set_xlabel("Features", fontsize=14)
@@ -126,6 +126,7 @@ beta_df = pd.DataFrame(
         "Lasso": beta_lasso,
         "LARS": beta_lars,
         "Primal Gradient": beta_primal,
+        "Dual Gradient": beta_dual,
     }
 )
 # Remove index of the dataframe
