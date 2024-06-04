@@ -1,8 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+
 
 def lasso_objective(X, y, beta, lambda_):
     n = len(y)
@@ -10,6 +7,7 @@ def lasso_objective(X, y, beta, lambda_):
     loss = 0.5 * np.dot(residual, residual) / n
     penalty = lambda_ * np.linalg.norm(beta, 1)
     return loss + penalty
+
 
 def lasso_gradient(X, y, beta, lambda_):
     n = len(y)
@@ -19,7 +17,9 @@ def lasso_gradient(X, y, beta, lambda_):
     return gradient_loss + gradient_penalty
 
 
-def dual_gradient_method(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
+def dual_gradient_method(
+    f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True
+):
     """
     Performs the Dual Gradient Method optimization.
 
@@ -37,12 +37,25 @@ def dual_gradient_method(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verb
 
     Returns:
     tuple: The final parameters, list of objective values per iteration, and all parameter updates as a numpy array.
+
+    Example:
+    # Assuming X_train, y_train, lasso_objective, and lasso_gradient are defined
+    lambda_ = 0.6
+    v0 = np.zeros(X_train.shape[1])
+    L0 = 10.0
+    gamma_d = 2
+    max_iter = 100
+
+    vk, objective_values, beta_values = dual_gradient_method(
+    lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
     """
     v = v0
     L = L0
     objective_values = []
     beta_values = []
-    max_backtracks = 10  # Limit the number of backtracking steps to avoid infinite loops
+    max_backtracks = (
+        10  # Limit the number of backtracking steps to avoid infinite loops
+    )
 
     for i in range(max_iter):
         g = grad(X, y, v, lambda_)
@@ -62,24 +75,17 @@ def dual_gradient_method(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verb
         if backtrack_count == 0:
             L /= gamma_d  # Decrease L to accelerate convergence
         else:
-            L = max(L0, 1 / step_size)  # Update L based on the effective step size that worked
+            L = max(
+                L0, 1 / step_size
+            )  # Update L based on the effective step size that worked
 
         v = next_v
         objective_values.append(current_obj)
         beta_values.append(v.copy())
 
         if verbose:
-            print(f"Iteration {i + 1}: Objective = {current_obj}, L = {L}, Backtracks = {backtrack_count}")
+            print(
+                f"Iteration {i + 1}: Objective = {current_obj}, L = {L}, Backtracks = {backtrack_count}"
+            )
 
     return v, objective_values, np.array(beta_values)
-
-# Example usage:
-# Assuming X_train, y_train, lasso_objective, and lasso_gradient are defined
-# lambda_ = 0.6
-# v0 = np.zeros(X_train.shape[1])
-# L0 = 10.0
-# gamma_d = 2
-# max_iter = 100
-
-# vk, objective_values, beta_values = dual_gradient_method(
-#     lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
