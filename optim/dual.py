@@ -17,7 +17,7 @@ def lasso_gradient(X, y, beta, lambda_):
     return gradient_loss + gradient_penalty
 
 
-def dual_gradient(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
+def dual_gradient(X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
     """
     Performs the Dual Gradient Method optimization.
 
@@ -47,6 +47,8 @@ def dual_gradient(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=Tru
     vk, objective_values, beta_values = dual_gradient_method(
     lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
     """
+    f = lasso_objective
+    grad = lasso_gradient
     v = v0
     L = L0
     objective_values = []
