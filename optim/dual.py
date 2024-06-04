@@ -17,9 +17,7 @@ def lasso_gradient(X, y, beta, lambda_):
     return gradient_loss + gradient_penalty
 
 
-def dual_gradient_method(
-    f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True
-):
+def dual_gradient(f, grad, X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
     """
     Performs the Dual Gradient Method optimization.
 

@@ -23,9 +23,7 @@ def lasso_gradient(X, y, beta, lambda_):
     return gradient_loss + gradient_penalty
 
 
-def primal_gradient_descent(
-    X, y, lambda_, learning_rate=0.01, max_iterations=1000, tol=1e-6
-):
+def primal_gradient(X, y, lambda_, learning_rate=0.01, max_iterations=1000, tol=1e-6):
     """
     Primal gradient descent for LASSO linear regression.
     """
