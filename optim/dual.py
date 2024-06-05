@@ -3,34 +3,41 @@ from .common import lasso_objective, lasso_gradient
 
 
 def dual_gradient(
-    X, y, lambda_, v0=None, L0=10.0, gamma_d=2, max_iter=100, verbose=False
-):
+    X: np.ndarray,
+    y: np.ndarray,
+    lambda_: float,
+    v0: np.ndarray = None,
+    L0: float = 10.0,
+    gamma_d: float = 2,  # recommended to be in [2, 3] in the original paper
+    max_iter: int = 100,
+    verbose: bool = False,
+) -> tuple:
     """
-    Performs the Dual Gradient Method optimization.
+    Performs the Dual Gradient Method optimization for LASSO regression.
 
     Args:
-    X (np.ndarray): Feature matrix.
-    y (np.ndarray): Response vector.
-    lambda_ (float): Regularization parameter.
-    v0 (np.ndarray): Initial guess for the parameters. If None, initializes to zeros.
-    L0 (float): Initial value for the Lipschitz constant.
-    gamma_d (float): Rate at which L is adjusted downwards when no backtracking occurs.
-    max_iter (int): Maximum number of iterations.
-    verbose (bool): Whether to print detailed progress messages.
+        X (ndarray): Feature matrix.
+        y (ndarray): Response vector.
+        lambda_ (float): Regularization parameter.
+        v0 (ndarray, optional): Initial guess for the parameters. If None, initializes to zeros. Defaults to None.
+        L0 (float, optional): Initial value for the Lipschitz constant. Defaults to 10.0.
+        gamma_d (float, optional): Rate at which L is adjusted downwards when no backtracking occurs. Defaults to 2.
+        max_iter (int, optional): Maximum number of iterations. Defaults to 100.
+        verbose (bool, optional): Whether to print detailed progress messages. Defaults to False.
 
     Returns:
-    tuple: The final parameters, list of objective values per iteration, and all parameter updates as a numpy array.
+        tuple: The final parameters, list of objective values per iteration, and all parameter updates as a numpy array.
 
     Example:
-    # Assuming X_train, y_train, lasso_objective, and lasso_gradient are defined
-    lambda_ = 0.6
-    v0 = np.zeros(X_train.shape[1])
-    L0 = 10.0
-    gamma_d = 2
-    max_iter = 100
+        # Assuming X_train, y_train, lasso_objective, and lasso_gradient are defined
+        lambda_ = 0.6
+        v0 = np.zeros(X_train.shape[1])
+        L0 = 10.0
+        gamma_d = 2
+        max_iter = 100
 
-    vk, objective_values, beta_values = dual_gradient_method(
-    lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
+        vk, objective_values, beta_values = dual_gradient_method(
+            lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
     """
     if v0 is None:
         v0 = np.zeros(X.shape[1])
