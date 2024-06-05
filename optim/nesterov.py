@@ -12,8 +12,8 @@ def nesterov_accelerated_gradient(
     """Nesterov accelerated gradient method for LASSO regression.
 
     Args:
-        y (ndarray): The target values of shape (n_samples,).
         X (ndarray): The feature matrix of shape (n_samples, n_features).
+        y (ndarray): The target values of shape (n_samples,).
         lambda_ (float): The regularization parameter.
         lr (float, optional): The learning rate. Defaults to 0.01.
         max_iter (int, optional): The maximum number of iterations. Defaults to 1000.
