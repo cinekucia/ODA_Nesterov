@@ -121,11 +121,12 @@ beta_df = pd.DataFrame(
 )
 # Remove index of the dataframe
 beta_df.set_index("Features", inplace=True)
+beta_df = beta_df.round(2).astype(str)
 
 
 # Function to apply red background color to cells with value 0
-def highlight_zeros(val):
-    color = "red" if val == 0 else ""
+def highlight_zeros(val, eps=0.05):
+    color = "red" if abs(float(val)) < eps else ""
     return f"background-color: {color}"
 
 
