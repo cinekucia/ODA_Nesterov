@@ -1,23 +1,17 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Lasso, LassoLars
 from sklearn.metrics import mean_squared_error
 import pandas as pd
 import matplotlib.cm as cm
 
 from optim import nesterov_accelerated_gradient, primal_gradient, dual_gradient
+from util import load_diabetes_data
 
-
-# Load diabetes dataset
-diabetes = load_diabetes()
-X = diabetes.data
-y = diabetes.target
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+# Prepare the data
+# Load the diabetes dataset
+X_train, X_test, y_train, y_test = load_diabetes_data()
 
 # Set Streamlit layout to wide
 st.set_page_config(layout="wide")
@@ -79,7 +73,7 @@ color_primal = cmap(0.5)
 color_dual = cmap(0.65)
 color_lars = cmap(0.8)
 
-
+# Plot
 ax.bar(
     indices - width, beta_nesterov, width=width, label="Nesterov", color=color_nesterov
 )
@@ -102,7 +96,6 @@ ax.bar(
     label="Dual Gradient",
     color=color_dual,
 )
-
 
 ax.set_xlabel("Features", fontsize=14)
 ax.set_ylabel("Beta Coefficients", fontsize=14)
@@ -157,12 +150,17 @@ st.dataframe(
     )
 )
 
-
 # Display MSEs for each method
 # mse_df = pd.DataFrame(
 #     {
-#         "Method": ["Nesterov", "Lasso", "LassoLars"],
-#         "Mean Squared Error": [mse_nesterov, mse_lasso, mse_lars],
+#         "Method": ["Nesterov", "Lasso", "LARS", "Primal Gradient", "Dual Gradient"],
+#         "Mean Squared Error": [
+#             mse_nesterov,
+#             mse_lasso,
+#             mse_lars,
+#             mean_squared_error(y_test, X_test.dot(beta_primal)),
+#             mean_squared_error(y_test, X_test.dot(beta_dual)),
+#         ],
 #     }
 # )
 # mse_df.set_index("Method", inplace=True)

@@ -1,1 +1,2 @@
 from .synthetic import generate_sparse_least_squares, generate_sparse_least_squares_2
+from .datasets import load_diabetes_data
