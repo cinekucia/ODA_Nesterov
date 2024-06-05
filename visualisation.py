@@ -49,70 +49,61 @@ beta_primal, loss_history_primal = primal_gradient(X_train, y_train, lambda_)
 # Dual Gradient
 vk, objective_values, beta_dual = dual_gradient(X_train, y_train, lambda_)
 
-# Plot
-# Apply dark theme
-plt.style.use("dark_background")
 
-# Create a larger figure
-fig, ax = plt.subplots(figsize=(20, 10))
+def plot_beta_coefficients(selected_methods, betas, colors):
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(20, 10))
 
-width = 0.15  # Width of the bars
-indices = np.arange(len(beta_nesterov))
+    width = 0.15  # Width of the bars
+    indices = np.arange(len(betas[0]))
 
-# Apply inferno colormap colors
+    n_methods = len(selected_methods)
+    positions = np.linspace(
+        -width * (n_methods - 1) / 2, width * (n_methods - 1) / 2, n_methods
+    )
+
+    for pos, method, beta, color in zip(positions, selected_methods, betas, colors):
+        ax.bar(indices + pos, beta, width=width, label=method, color=color)
+
+    for i in range(len(indices)):
+        ax.axvline(x=i, color="white", linestyle="--", linewidth=0.5)
+
+    ax.set_xlabel("Features", fontsize=14)
+    ax.set_ylabel("Beta Coefficients", fontsize=14)
+    ax.set_title(
+        r"Beta Coefficients for each method and selected $\lambda$ or $\alpha$",
+        fontsize=16,
+    )
+    ax.set_xticks(indices)
+    ax.legend(fontsize=14)
+    ax.grid(True, linestyle="--", linewidth=0.5, color="gray")
+
+    st.pyplot(fig)
+
+
+# Prepare data for plotting
+betas = []
+colors = []
 cmap = cm.get_cmap("inferno")
-color_nesterov = cmap(0.2)
-color_lasso = cmap(0.35)
-color_primal = cmap(0.5)
-color_dual = cmap(0.65)
-color_lars = cmap(0.8)
 
-count_methods = len(methods)
-
-# Plot selected methods
 if "Nesterov" in methods:
-    ax.bar(
-        indices - 2 * width,
-        beta_nesterov,
-        width=width,
-        label="Nesterov",
-        color=color_nesterov,
-    )
+    betas.append(beta_nesterov)
+    colors.append(cmap(0.2))
 if "Lasso" in methods:
-    ax.bar(indices - width, beta_lasso, width=width, label="Lasso", color=color_lasso)
+    betas.append(beta_lasso)
+    colors.append(cmap(0.35))
 if "LARS" in methods:
-    ax.bar(indices, beta_lars, width=width, label="LARS", color=color_lars)
+    betas.append(beta_lars)
+    colors.append(cmap(0.5))
 if "Primal Gradient" in methods:
-    ax.bar(
-        indices + width,
-        beta_primal,
-        width=width,
-        label="Primal Gradient",
-        color=color_primal,
-    )
+    betas.append(beta_primal)
+    colors.append(cmap(0.65))
 if "Dual Gradient" in methods:
-    ax.bar(
-        indices + 2 * width,
-        beta_dual,
-        width=width,
-        label="Dual Gradient",
-        color=color_dual,
-    )
+    betas.append(beta_dual)
+    colors.append(cmap(0.8))
 
-# Add vertical lines at every integer x
-for i in range(len(indices)):
-    ax.axvline(x=i, color="white", linestyle="--", linewidth=0.5)
-
-ax.set_xlabel("Features", fontsize=14)
-ax.set_ylabel("Beta Coefficients", fontsize=14)
-ax.set_title(
-    r"Beta Coefficients for each method and selected $\lambda$ or $\alpha$", fontsize=16
-)
-ax.set_xticks(indices)
-ax.legend(fontsize=14)
-ax.grid(True, linestyle="--", linewidth=0.5, color="gray")
-
-st.pyplot(fig)
+# Plot the selected methods
+plot_beta_coefficients(methods, betas, colors)
 
 # Display the results
 st.write("Beta Coefficients Comparison:")
@@ -121,11 +112,11 @@ st.write("Beta Coefficients Comparison:")
 beta_df = pd.DataFrame(
     {
         "Features": [f"Beta_{i}" for i in range(len(beta_nesterov))],
-        "Nesterov": beta_nesterov,
-        "Lasso": beta_lasso,
-        "LARS": beta_lars,
-        "Primal Gradient": beta_primal,
-        "Dual Gradient": beta_dual,
+        "Nesterov": np.round(beta_nesterov, 2),
+        "Lasso": np.round(beta_lasso, 2),
+        "LARS": np.round(beta_lars, 2),
+        "Primal Gradient": np.round(beta_primal, 2),
+        "Dual Gradient": np.round(beta_dual, 2),
     }
 )
 # Remove index of the dataframe
