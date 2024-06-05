@@ -2,8 +2,8 @@ import numpy as np
 
 
 def nesterov_accelerated_gradient(
-    y: np.ndarray,
     X: np.ndarray,
+    y: np.ndarray,
     lambda_: float,
     lr: float = 0.01,
     max_iter: int = 1000,

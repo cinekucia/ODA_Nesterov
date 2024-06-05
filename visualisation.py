@@ -34,7 +34,7 @@ methods = st.sidebar.multiselect(
 
 # Calculate beta coefficients and MSE for each method
 beta_nesterov, loss_history_nesterov = nesterov_accelerated_gradient(
-    y_train, X_train, lambda_
+    X_train, y_train, lambda_
 )
 mse_nesterov = mean_squared_error(y_test, X_test.dot(beta_nesterov))
 
