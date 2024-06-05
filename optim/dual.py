@@ -17,17 +17,17 @@ def lasso_gradient(X, y, beta, lambda_):
     return gradient_loss + gradient_penalty
 
 
-def dual_gradient(X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
+def dual_gradient(
+    X, y, lambda_, v0=None, L0=10.0, gamma_d=2, max_iter=100, verbose=False
+):
     """
     Performs the Dual Gradient Method optimization.
 
     Args:
-    f (Callable): The objective function.
-    grad (Callable): The gradient of the objective function.
     X (np.ndarray): Feature matrix.
     y (np.ndarray): Response vector.
     lambda_ (float): Regularization parameter.
-    v0 (np.ndarray): Initial guess for the parameters.
+    v0 (np.ndarray): Initial guess for the parameters. If None, initializes to zeros.
     L0 (float): Initial value for the Lipschitz constant.
     gamma_d (float): Rate at which L is adjusted downwards when no backtracking occurs.
     max_iter (int): Maximum number of iterations.
@@ -47,6 +47,9 @@ def dual_gradient(X, y, lambda_, v0, L0, gamma_d, max_iter, verbose=True):
     vk, objective_values, beta_values = dual_gradient_method(
     lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
     """
+    if v0 is None:
+        v0 = np.zeros(X.shape[1])
+
     f = lasso_objective
     grad = lasso_gradient
     v = v0

@@ -40,19 +40,7 @@ mse_lars = mean_squared_error(y_test, lasso_lars.predict(X_test))
 beta_primal, loss_history_primal = primal_gradient(X_train, y_train, lambda_)
 
 # Dual Gradient
-v0 = np.zeros(X_train.shape[1])
-L0 = 10.0
-gamma_d = 2
-max_iter = 100
-vk, objective_values, beta_dual = dual_gradient(
-    X_train,
-    y_train,
-    lambda_,
-    v0,
-    L0,
-    gamma_d,
-    max_iter,
-)
+vk, objective_values, beta_dual = dual_gradient(X_train, y_train, lambda_)
 
 
 # Plot
