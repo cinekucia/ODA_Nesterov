@@ -9,6 +9,9 @@ import matplotlib.cm as cm
 from optim import nesterov_accelerated_gradient, primal_gradient, dual_gradient
 from util import load_diabetes_data
 
+
+st.set_option("deprecation.showPyplotGlobalUse", False)
+
 # Prepare the data
 # Load the diabetes dataset
 X_train, X_test, y_train, y_test = load_diabetes_data()
@@ -30,7 +33,9 @@ methods = st.sidebar.multiselect(
 )
 
 # Calculate beta coefficients and MSE for each method
-beta_nesterov = nesterov_accelerated_gradient(y_train, X_train, lambda_)
+beta_nesterov, loss_history_nesterov = nesterov_accelerated_gradient(
+    y_train, X_train, lambda_
+)
 mse_nesterov = mean_squared_error(y_test, X_test.dot(beta_nesterov))
 
 lasso = Lasso(alpha=lambda_)
@@ -47,10 +52,11 @@ mse_lars = mean_squared_error(y_test, lasso_lars.predict(X_test))
 beta_primal, loss_history_primal = primal_gradient(X_train, y_train, lambda_)
 
 # Dual Gradient
-vk, objective_values, beta_dual = dual_gradient(X_train, y_train, lambda_)
+vk, loss_history_dual, beta_dual = dual_gradient(X_train, y_train, lambda_)
 
 
 def plot_beta_coefficients(selected_methods, betas, colors):
+    """Plots bar chart of beta coefficients for each method marked with different colors."""
     plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(20, 10))
 
@@ -61,12 +67,12 @@ def plot_beta_coefficients(selected_methods, betas, colors):
     positions = np.linspace(
         -width * (n_methods - 1) / 2, width * (n_methods - 1) / 2, n_methods
     )
+    flattened_beta = np.concatenate(betas)
+    max_abs_value = np.max(np.abs(flattened_beta))
+    y_lim = (-max_abs_value, max_abs_value)
 
     for pos, method, beta, color in zip(positions, selected_methods, betas, colors):
         ax.bar(indices + pos, beta, width=width, label=method, color=color)
-
-    for i in range(len(indices)):
-        ax.axvline(x=i, color="white", linestyle="--", linewidth=0.5)
 
     ax.set_xlabel("Features", fontsize=14)
     ax.set_ylabel("Beta Coefficients", fontsize=14)
@@ -77,6 +83,24 @@ def plot_beta_coefficients(selected_methods, betas, colors):
     ax.set_xticks(indices)
     ax.legend(fontsize=14)
     ax.grid(True, linestyle="--", linewidth=0.5, color="gray")
+    ax.set_ylim(y_lim)
+
+    st.pyplot(fig)
+
+
+def plot_objective_function_per_iteration(objective_values_dict):
+    """Plots the objective function per iteration for each method."""
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(20, 10))
+
+    for method, values in objective_values_dict.items():
+        ax.plot(values, label=method)
+
+    ax.set_xlabel("Iterations", fontsize=14)
+    ax.set_ylabel("Objective Function Value", fontsize=14)
+    ax.set_title("Objective Function per Iteration", fontsize=16)
+    ax.legend(fontsize=14)
+    ax.grid(True, linestyle="--", linewidth=0.5, color="gray")
 
     st.pyplot(fig)
 
@@ -84,23 +108,30 @@ def plot_beta_coefficients(selected_methods, betas, colors):
 # Prepare data for plotting
 betas = []
 colors = []
+objective_values = {}
 cmap = cm.get_cmap("inferno")
 
 if "Nesterov" in methods:
     betas.append(beta_nesterov)
     colors.append(cmap(0.2))
+    objective_values["Nesterov"] = loss_history_nesterov
 if "Lasso" in methods:
     betas.append(beta_lasso)
     colors.append(cmap(0.35))
+    # we skip the objective function for Lasso as it is not available
 if "LARS" in methods:
     betas.append(beta_lars)
     colors.append(cmap(0.5))
+    # we skip the objective function for LARS as it is not available
 if "Primal Gradient" in methods:
     betas.append(beta_primal)
     colors.append(cmap(0.65))
+    objective_values["Primal Gradient"] = loss_history_primal
 if "Dual Gradient" in methods:
     betas.append(beta_dual)
     colors.append(cmap(0.8))
+    objective_values["Dual Gradient"] = loss_history_dual
+
 
 # Plot the selected methods
 plot_beta_coefficients(methods, betas, colors)
@@ -147,6 +178,9 @@ st.dataframe(
         ]
     )
 )
+
+# Plot the objective function per iteration for each method
+plot_objective_function_per_iteration(objective_values)
 
 # Display MSEs for each method
 mse_df = pd.DataFrame(
