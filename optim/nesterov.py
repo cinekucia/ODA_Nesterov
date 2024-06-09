@@ -1,4 +1,5 @@
 import numpy as np
+from .common import lasso_objective, lasso_gradient
 
 
 def nesterov_accelerated_gradient(
@@ -8,7 +9,7 @@ def nesterov_accelerated_gradient(
     lr: float = 0.01,
     max_iter: int = 1000,
     tol: float = 1e-6,
-) -> tuple[np.ndarray, list[float]]:
+) -> tuple[np.ndarray, list[float], list[float]]:
     """Nesterov accelerated gradient method for LASSO regression.
 
     Args:
@@ -20,7 +21,7 @@ def nesterov_accelerated_gradient(
         tol (float, optional): The tolerance for convergence. Defaults to 1e-6.
 
     Returns:
-        Tuple[ndarray, List[float]]: A tuple containing the optimized coefficient vector and the history of loss values during optimization.
+        Tuple[ndarray, List[float], List[float]]: A tuple containing the optimized coefficient vector and the history of loss values during optimization.
     """
 
     def soft_thresholding(x: np.ndarray, lambda_: float) -> np.ndarray:
@@ -41,8 +42,9 @@ def nesterov_accelerated_gradient(
     t = 1
     t_prev = 1
     loss_history = []
+    gap_history = []
 
-    for _ in range(max_iter):
+    for i in range(max_iter):
         y_tilde = beta + ((t_prev - 1) / t) * (beta - beta_prev)
         gradient = -X.T.dot(y - X.dot(y_tilde)) / n
         beta_prev = beta.copy()
@@ -53,7 +55,14 @@ def nesterov_accelerated_gradient(
             2 * n
         ) + lambda_ * np.linalg.norm(beta, ord=1)
         loss_history.append(loss)
+        # ADDED: compute the gap
+        if i > 0:
+            gap = np.linalg.norm(beta - beta_prev) / np.linalg.norm(beta_prev)
+            gap_history.append(gap)
+            if gap < tol:
+                break
+        # END ADDED
         if np.linalg.norm(beta - beta_prev, ord=2) < tol:
             break
 
-    return beta, loss_history
+    return beta, loss_history, gap_history
