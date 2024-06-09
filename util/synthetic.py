@@ -33,8 +33,8 @@ def generate_sparse_least_squares(m, n, rho):
     x_star[non_zero_indices] = np.random.normal(0, 1, int(n * rho))
 
     # Calculate the vector b = A*x_star + noise
-    noise = np.random.normal(0, 0.1, m)  # adding small Gaussian noise
-    b = np.dot(A, x_star) + noise
+    # noise = np.random.normal(0, 0.1, m)  # adding small Gaussian noise
+    b = np.dot(A, x_star) # + noise
 
     return A, b, x_star
 
@@ -96,3 +96,50 @@ def generate_sparse_least_squares_2(m, n, rho):
     b = np.dot(A, x_star)
 
     return A, b, x_star
+
+
+def generate_test_data(m, m_star, n, rho):
+    """_summary_
+
+    Args:
+        m (_type_): _description_
+        m_star (_type_): m_star < m, the number of components of the optimal 
+        solution x_star of problem
+        n (_type_): _description_
+        rho (_type_): rho > 0, parameter responsible for the size of x_star
+    """
+    # Generate randomly matrix B in R^{m x n} with elements uniformly distributed in [-1, 1]
+    B = np.random.uniform(-1, 1, (m, n))
+    # Generate randomly vector v_star in R^m with elements uniformly distributed in [0, 1]
+    v_star = np.random.uniform(0, 1, m)
+    # Define y_star = v_star / ||v_star||_2
+    y_star = v_star / np.linalg.norm(v_star, ord=2) # normalize v_star
+    # Compute B^T * y_star
+    # sort the entries of B^T * y_star in decreasing order of their absolute values
+    B_transpose_y_star = np.dot(B.T, y_star)
+    sorted_indices = np.argsort(-np.abs(B_transpose_y_star))
+    B_sorted = B[:, sorted_indices]
+    # for i = 1, 2, ..., n, define a_i = alpha_i * B_i, where
+    # alpha_i = 1 / |<b_i, y_star>| for i = 1, 2, ..., m_star
+    # alpha_i = epsilon_i / |<b_i, y_star>| otherwise
+    # where epsilon_i are uniformly distributed in [0, 1]
+    A = np.zeros((m, n))
+    for i in range(n):
+        denominator = np.abs(np.dot(B_sorted[:, i], y_star))
+        if i < m_star:
+            numerator = 1
+        else:
+            numerator = np.random.uniform(0, 1)  # epsilon_i
+        alpha_i = numerator / denominator
+        A[:, i] = alpha_i * B_sorted[:, i]
+    # for i = 1, 2, ..., n, generate components of the primal solution x_star:
+    # x_star_i = epsilon_i * sign(<a_i, y_star>) for i <= m_star and 0 otherwise
+    # where epsilon _i are uniformly distributed in [0, rho / sqrt(m_star)]
+    x_star = np.zeros(n)
+    for i in range(m_star):
+        epsilon_i = np.random.uniform(0, rho / np.sqrt(m_star))
+        x_star[i] = epsilon_i * np.sign(np.dot(A[:, i], y_star))
+    # Generate the vector b = A * x_star
+    b = y_star + np.dot(A, x_star)
+    phi_star = 1/2 * np.linalg.norm(y_star)**2 + np.linalg.norm(x_star, ord=1)
+    return A, b, x_star, phi_star
