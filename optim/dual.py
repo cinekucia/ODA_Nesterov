@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from .common import lasso_objective, lasso_gradient
 
@@ -84,3 +85,52 @@ def dual_gradient(
             )
     # beta_values = historical parameter values
     return v, objective_values, np.array(beta_values[-1])
+
+
+def dual_gradient_new(A, b, v0, L0, gamma_d, max_iter=10000, tol=1e-6):
+    """
+    Dual Gradient Method with Nesterov acceleration for solving Ax = b using least squares,
+    including gap history and loss history.
+    """
+    m, n = A.shape
+    v = v0
+    v_prev = v0
+    L = L0
+    gap_history = []
+    loss_history = []
+    cpu_time_history = []
+    initial_residual = np.dot(A, v) - b
+    initial_loss = np.linalg.norm(initial_residual)**2 / 2
+
+    for k in range(max_iter):
+        start_time = time.process_time()
+        # Nesterov acceleration step
+        if k > 0:
+            y = v + (k - 1) / (k + 2) * (v - v_prev)
+        else:
+            y = v
+
+        grad_f = 2 * np.dot(A.T, (np.dot(A, y) - b))  # Gradient of the least squares loss
+
+        Mk = np.linalg.norm(grad_f, 2)                # Computing Mk
+        if Mk == 0:
+            Mk = 1e-16  # Prevent division by zero
+
+        v_prev = v
+        v -= gamma_d * grad_f / Mk
+
+        current_residual = np.dot(A, v) - b
+        current_loss = np.linalg.norm(current_residual)**2 / 2
+        current_gap = np.linalg.norm(current_residual)**2 / np.linalg.norm(initial_residual)**2
+
+        end_time = time.process_time()
+
+        gap_history.append(current_gap)
+        loss_history.append(current_loss)
+        cpu_time_history.append(end_time - start_time)
+
+        # Check for convergence based on the relative gap
+        if current_gap < tol:
+            break
+
+    return v, k, current_gap, gap_history, loss_history, cpu_time_history
