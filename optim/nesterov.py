@@ -1,6 +1,6 @@
 import numpy as np
 from .common import lasso_objective, lasso_gradient
-
+import time
 
 def nesterov_accelerated_gradient(
     X: np.ndarray,
@@ -43,8 +43,10 @@ def nesterov_accelerated_gradient(
     t_prev = 1
     loss_history = []
     gap_history = []
+    cpu_time_history = []
 
     for i in range(max_iter):
+        start_time = time.process_time()
         y_tilde = beta + ((t_prev - 1) / t) * (beta - beta_prev)
         gradient = -X.T.dot(y - X.dot(y_tilde)) / n
         beta_prev = beta.copy()
@@ -55,6 +57,9 @@ def nesterov_accelerated_gradient(
             2 * n
         ) + lambda_ * np.linalg.norm(beta, ord=1)
         loss_history.append(loss)
+        # update cpu time
+        end_time = time.process_time()
+        cpu_time_history.append(end_time - start_time)
         # ADDED: compute the gap
         if i > 0:
             gap = np.linalg.norm(beta - beta_prev) / np.linalg.norm(beta_prev)
@@ -65,4 +70,4 @@ def nesterov_accelerated_gradient(
         if np.linalg.norm(beta - beta_prev, ord=2) < tol:
             break
 
-    return beta, loss_history, gap_history
+    return beta, loss_history, gap_history, cpu_time_history
