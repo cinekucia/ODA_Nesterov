@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generate_sparse_least_squares(m, n, rho):
+def generate_sparse_least_squares(m, n, rho, random_seed=None):
     """
     Generates a Sparse Least Squares problem according to the specifications in Nesterov's paper.
 
@@ -23,6 +23,7 @@ def generate_sparse_least_squares(m, n, rho):
     # print("Vector b:\n", b)
     print("Sparse solution x*:\n", x_star)
     """
+    np.random.seed(random_seed)
     # Generate a dense matrix A with elements uniformly distributed in [-1, 1]
     A = np.random.uniform(-1, 1, (m, n))
 
