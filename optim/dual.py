@@ -1,136 +1,111 @@
 import time
 import numpy as np
-from .common import lasso_objective, lasso_gradient
+# from .common import lasso_objective, lasso_gradient
 
 
-def dual_gradient(
-    X: np.ndarray,
-    y: np.ndarray,
-    lambda_: float,
-    v0: np.ndarray = None,
-    L0: float = 10.0,
-    gamma_d: float = 2,  # recommended to be in [2, 3] in the original paper
-    max_iter: int = 100,
-    verbose: bool = False,
-) -> tuple:
-    """
-    Performs the Dual Gradient Method optimization for LASSO regression.
+def three_cases(changes, penalty, denominator):
+    # Vectorized handling of three cases for the proximal gradient update
+    return (np.less_equal(changes, -penalty) * (-changes - penalty) + np.greater_equal(changes, penalty) * (-changes + penalty)) / denominator
+
+
+class DualGradientMethod:
+    """Dual Gradient Method with Nesterov acceleration for solving Ax = b using least squares.
 
     Args:
-        X (ndarray): Feature matrix.
-        y (ndarray): Response vector.
-        lambda_ (float): Regularization parameter.
-        v0 (ndarray, optional): Initial guess for the parameters. If None, initializes to zeros. Defaults to None.
-        L0 (float, optional): Initial value for the Lipschitz constant. Defaults to 10.0.
-        gamma_d (float, optional): Rate at which L is adjusted downwards when no backtracking occurs. Defaults to 2.
-        max_iter (int, optional): Maximum number of iterations. Defaults to 100.
-        verbose (bool, optional): Whether to print detailed progress messages. Defaults to False.
+        A (np.ndarray): Coefficient matrix.
+        b (np.ndarray): Right-hand side vector.
+        penalty (float): Regularization parameter.
+        gamma_u (float): Rate at which L is adjusted upwards.
+        gamma_d (float): Rate at which L is adjusted downwards.
+        L_0 (float): Initial value for the Lipschitz constant.
+        v_0 (np.ndarray): Initial guess for the solution.
+        max_iter (int): Maximum number of iterations.
+        tol (float): Tolerance for stopping criterion based on relative gap.
 
     Returns:
-        tuple: The final parameters, list of objective values per iteration, and all parameter updates as a numpy array.
-
-    Example:
-        # Assuming X_train, y_train, lasso_objective, and lasso_gradient are defined
-        lambda_ = 0.6
-        v0 = np.zeros(X_train.shape[1])
-        L0 = 10.0
-        gamma_d = 2
-        max_iter = 100
-
-        vk, objective_values, beta_values = dual_gradient_method(
-            lasso_objective, lasso_gradient, X_train, y_train, lambda_, v0, L0, gamma_d, max_iter)
+        Tuple containing:
+        - np.ndarray: The solution vector x.
+        - int: Total number of iterations performed.
+        - float: Final relative gap.
+        - List[float]: History of relative gaps.
+        - List[float]: History of loss values.
+        - List[float]: History of CPU times.
     """
-    if v0 is None:
-        v0 = np.zeros(X.shape[1])
+    def __init__(self, A, b, penalty, gamma_u, gamma_d, L_0, v_0, max_iter=10000, tol=1e-6) -> None:
+        self.A = A
+        self.b = b
+        self.penalty = penalty
+        self.gamma_u = gamma_u
+        self.gamma_d = gamma_d
+        self.L = L_0
+        self.v = v_0
+        self.max_iter = max_iter
+        self.tol = tol
+        self.gap_history = []
+        self.loss_history = []
+        self.cpu_time_history = []
 
-    f = lasso_objective
-    grad = lasso_gradient
-    v = v0
-    L = L0
-    objective_values = []
-    beta_values = []
-    max_backtracks = (
-        10  # Limit the number of backtracking steps to avoid infinite loops
-    )
+    def gradient_f(self, x):
+        """Gradient of the least squares loss function."""
+        return 2 * np.dot(self.A.T, (np.dot(self.A, x) - self.b))
 
-    for i in range(max_iter):
-        g = grad(X, y, v, lambda_)
-        initial_step_size = 1 / L
-        step_size = initial_step_size
-        next_v = v - step_size * g
-        current_obj = f(X, y, v, lambda_)
-        next_obj = f(X, y, next_v, lambda_)
+    def f(self, x):
+        """Least squares loss function."""
+        return np.linalg.norm(np.dot(self.A, x) - self.b)**2 / 2
 
-        backtrack_count = 0
-        while next_obj > current_obj and backtrack_count < max_backtracks:
-            step_size *= 0.5
-            next_v = v - step_size * g
-            next_obj = f(X, y, next_v, lambda_)
-            backtrack_count += 1
+    def psi(self, x):
+        """Placeholder for potential regularizer function."""
+        return 0
 
-        if backtrack_count == 0:
-            L /= gamma_d  # Decrease L to accelerate convergence
-        else:
-            L = max(
-                L0, 1 / step_size
-            )  # Update L based on the effective step size that worked
+    def compute_steps(self):
+        """Compute the Nesterov accelerated gradient steps."""
+        v_prev = self.v
+        initial_residual = np.dot(self.A, self.v) - self.b
+        initial_loss = np.linalg.norm(initial_residual)**2 / 2
 
-        v = next_v
-        objective_values.append(current_obj)
-        beta_values.append(v.copy())
+        for k in range(self.max_iter):
+            start_time = time.process_time()
 
-        if verbose:
-            print(
-                f"Iteration {i + 1}: Objective = {current_obj}, L = {L}, Backtracks = {backtrack_count}"
-            )
-    # beta_values = historical parameter values
-    return v, objective_values, np.array(beta_values[-1])
+            # Nesterov acceleration
+            if k > 0:
+                y = self.v + (k - 1) / (k + 2) * (self.v - v_prev)
+            else:
+                y = self.v
 
+            grad_f = self.gradient_f(y)
+            Mk = np.linalg.norm(grad_f, 2)
+            if Mk == 0:
+                Mk = 1e-16  # Prevent division by zero
 
-def dual_gradient_new(A, b, v0, L0, gamma_d, max_iter=10000, tol=1e-6):
-    """
-    Dual Gradient Method with Nesterov acceleration for solving Ax = b using least squares,
-    including gap history and loss history.
-    """
-    m, n = A.shape
-    v = v0
-    v_prev = v0
-    L = L0
-    gap_history = []
-    loss_history = []
-    cpu_time_history = []
-    initial_residual = np.dot(A, v) - b
-    initial_loss = np.linalg.norm(initial_residual)**2 / 2
+            L_k = max(self.L, Mk / self.gamma_d)
+            T, L_new = self.gradient_iteration(self.penalty, self.gamma_u, y, L_k)
+            self.L = L_new
 
-    for k in range(max_iter):
-        start_time = time.process_time()
-        # Nesterov acceleration step
-        if k > 0:
-            y = v + (k - 1) / (k + 2) * (v - v_prev)
-        else:
-            y = v
+            v_prev = self.v
+            self.v = T
 
-        grad_f = 2 * np.dot(A.T, (np.dot(A, y) - b))  # Gradient of the least squares loss
+            current_residual = np.dot(self.A, self.v) - self.b
+            current_loss = np.linalg.norm(current_residual)**2 / 2
+            current_gap = current_loss / initial_loss
 
-        Mk = np.linalg.norm(grad_f, 2)                # Computing Mk
-        if Mk == 0:
-            Mk = 1e-16  # Prevent division by zero
+            end_time = time.process_time()
 
-        v_prev = v
-        v -= gamma_d * grad_f / Mk
+            self.gap_history.append(current_gap)
+            self.loss_history.append(current_loss)
+            self.cpu_time_history.append(end_time - start_time)
 
-        current_residual = np.dot(A, v) - b
-        current_loss = np.linalg.norm(current_residual)**2 / 2
-        current_gap = np.linalg.norm(current_residual)**2 / np.linalg.norm(initial_residual)**2
+            if current_gap < self.tol:
+                break
 
-        end_time = time.process_time()
+        return self.v, k, current_gap, self.gap_history, self.loss_history, self.cpu_time_history
 
-        gap_history.append(current_gap)
-        loss_history.append(current_loss)
-        cpu_time_history.append(end_time - start_time)
-
-        # Check for convergence based on the relative gap
-        if current_gap < tol:
-            break
-
-    return v, k, current_gap, gap_history, loss_history, cpu_time_history
+    def gradient_iteration(self, penalty, gamma_u, x, M):
+        """Gradient iteration with backtracking line search."""
+        L = M
+        while True:
+            changes = self.gradient_f(x) - L * x
+            T = three_cases(changes, penalty, L)
+            if not self.psi(T) > np.dot(self.gradient_f(T), (x - T)) + np.linalg.norm(x - T)**2 * L / 2 + self.psi(x):
+                break
+            L *= gamma_u
+        return T, L
